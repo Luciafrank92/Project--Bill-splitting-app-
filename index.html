@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Bill Splitter</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .container {
+        grid-template-columns: 1fr 1fr;
+      }
+      .full-width {
+        grid-column: span 2;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: var(--primary);
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      margin-bottom: 1rem;
+      border-bottom: 2px solid var(--bg);
+      padding-bottom: 0.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      color: var(--text-muted);
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 0.625rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 1rem;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--primary);
+    }
+
+    button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button.btn-danger {
+      background-color: transparent;
+      color: var(--danger);
+      border: 1px solid var(--danger);
+      padding: 0.25rem 0.5rem;
+      width: auto;
+      font-size: 0.8rem;
+    }
+
+    button.btn-danger:hover {
+      background-color: var(--danger);
+      color: white;
+    }
+
+    .inline-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .list {
+      list-style: none;
+      margin-top: 0.5rem;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .summary-card {
+      background-color: #eff6ff;
+      border-color: #bfdbfe;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+
+    .summary-row.total {
+      font-weight: bold;
+      font-size: 1.1rem;
+      border-top: 1px solid #bfdbfe;
+      padding-top: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .person-breakout {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .badge {
+      background: #e0e7ff;
+      color: #3730a3;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  
+  <!-- App Header -->
+  <div class="card full-width">
+    <h1>Bill Splitter Pro</h1>
+    <p style="color: var(--text-muted); font-size: 0.9rem;">Add people, items, tax, and tip to automatically calculate exact individual shares.</p>
+  </div>
+
+  <!-- Section 1: People -->
+  <div class="card">
+    <h2>1. People</h2>
+    <div class="form-group inline-group">
+      <input type="text" id="personName" placeholder="Name (e.g., Alex)">
+      <button onclick="addPerson()" style="width: 80px;">Add</button>
+    </div>
+    <ul id="peopleList" class="list"></ul>
+  </div>
+
+  <!-- Section 2: Bill Settings (Tax/Tip) -->
+  <div class="card">
+    <h2>2. Tax & Tip</h2>
+    <div class="form-group">
+      <label for="taxRate">Tax Rate (%)</label>
+      <input type="number" id="taxRate" value="8.5" step="0.1" oninput="calculate()">
+    </div>
+    <div class="form-group">
+      <label for="tipRate">Tip Rate (%)</label>
+      <input type="number" id="tipRate" value="15" step="0.5" oninput="calculate()">
+    </div>
+  </div>
+
+  <!-- Section 3: Items -->
+  <div class="card full-width">
+    <h2>3. Items & Allocation</h2>
+    <div class="form-group inline-group" style="margin-bottom: 0.5rem;">
+      <input type="text" id="itemName" placeholder="Item Name (e.g., Pizza)" style="flex: 2;">
+      <input type="number" id="itemPrice" placeholder="Price ($)" step="0.01" style="flex: 1;">
+      <select id="itemAssignee" style="flex: 1.5;">
+        <option value="ALL">Split Equally</option>
+      </select>
+      <button onclick="addItem()" style="width: 100px;">Add Item</button>
+    </div>
+    <ul id="itemList" class="list"></ul>
+  </div>
+
+  <!-- Section 4: Output / Summary -->
+  <div class="card full-width summary-card">
+    <h2>4. Final Breakdown</h2>
+    <div id="overallSummary">
+      <div class="summary-row"><span>Subtotal:</span><span id="subtotalVal">$0.00</span></div>
+      <div class="summary-row"><span>Tax:</span><span id="taxVal">$0.00</span></div>
+      <div class="summary-row"><span>Tip:</span><span id="tipVal">$0.00</span></div>
+      <div class="summary-row total"><span>Grand Total:</span><span id="grandTotalVal">$0.00</span></div>
+    </div>
+
+    <div class="person-breakout">
+      <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">Per Person Payment:</h3>
+      <div id="personTotals"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let people = [];
+  let items = [];
+
+  function addPerson() {
+    const input = document.getElementById('personName');
+    const name = input.value.trim();
+    
+    if (!name) return alert('Please enter a name');
+    if (people.includes(name)) return alert('Person already added');
+
+    people.push(name);
+    input.value = '';
+    
+    updatePeopleUI();
+    updateDropdownUI();
+    calculate();
+  }
+
+  function removePerson(index) {
+    const removedPerson = people[index];
+    people.splice(index, 1);
+    
+    // Remove person from items assigned specifically to them
+    items.forEach(item => {
+      if (item.assignedTo === removedPerson) {
+        item.assignedTo = 'ALL';
+      }
+    });
+
+    updatePeopleUI();
+    updateDropdownUI();
+    updateItemsUI();
+    calculate();
+  }
+
+  function updatePeopleUI() {
+    const list = document.getElementById('peopleList');
+    list.innerHTML = people.map((p, i) => `
+      <li class="list-item">
+        <span>${p}</span>
+        <button class="btn-danger" onclick="removePerson(${i})">Remove</button>
+      </li>
+    `).join('');
+  }
+
+  function updateDropdownUI() {
+    const select = document.getElementById('itemAssignee');
+    select.innerHTML = '<option value="ALL">Split Equally (All)</option>';
+    people.forEach(p => {
+      select.innerHTML += `<option value="${p}">${p}</option>`;
+    });
+  }
+
+  function addItem() {
+    const nameInput = document.getElementById('itemName');
+    const priceInput = document.getElementById('itemPrice');
+    const assigneeInput = document.getElementById('itemAssignee');
+
+    const name = nameInput.value.trim();
+    const price = parseFloat(priceInput.value);
+    const assignedTo = assigneeInput.value;
+
+    if (!name || isNaN(price) || price <= 0) {
+      return alert('Please enter a valid item name and price');
+    }
+
+    items.push({ id: Date.now(), name, price, assignedTo });
+    
+    nameInput.value = '';
+    priceInput.value = '';
+    
+    updateItemsUI();
+    calculate();
+  }
+
+  function removeItem(id) {
+    items = items.filter(item => item.id !== id);
+    updateItemsUI();
+    calculate();
+  }
+
+  function updateItemsUI() {
+    const list = document.getElementById('itemList');
+    list.innerHTML = items.map(item => `
+      <li class="list-item">
+        <div>
+          <strong>${item.name}</strong> - $${item.price.toFixed(2)}
+          <span class="badge">${item.assignedTo === 'ALL' ? 'Everyone' : item.assignedTo}</span>
+        </div>
+        <button class="btn-danger" onclick="removeItem(${item.id})">Delete</button>
+      </li>
+    `).join('');
+  }
+
+  function calculate() {
+    const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+    const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+    const tipRate = parseFloat(document.getElementById('tipRate').value) || 0;
+
+    const taxTotal = subtotal * (taxRate / 100);
+    const tipTotal = subtotal * (tipRate / 100);
+    const grandTotal = subtotal + taxTotal + tipTotal;
+
+    // Update Summary UI
+    document.getElementById('subtotalVal').textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById('taxVal').textContent = `$${taxTotal.toFixed(2)}`;
+    document.getElementById('tipVal').textContent = `$${tipTotal.toFixed(2)}`;
+    document.getElementById('grandTotalVal').textContent = `$${grandTotal.toFixed(2)}`;
+
+    // Calculate Individual Breakdowns
+    const personContainer = document.getElementById('personTotals');
+    
+    if (people.length === 0) {
+      personContainer.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Add people to see individual breakdowns.</p>';
+      return;
+    }
+
+    // Tax and Tip multiplier relative to subtotal
+    const multiplier = subtotal > 0 ? (1 + (taxRate / 100) + (tipRate / 100)) : 1;
+    
+    const individualTotals = {};
+    people.forEach(p => individualTotals[p] = 0);
+
+    items.forEach(item => {
+      if (item.assignedTo === 'ALL') {
+        const splitAmount = item.price / people.length;
+        people.forEach(p => individualTotals[p] += splitAmount);
+      } else if (individualTotals[item.assignedTo] !== undefined) {
+        individualTotals[item.assignedTo] += item.price;
+      }
+    });
+
+    // Render individual totals with proportional tax & tip applied
+    personContainer.innerHTML = people.map(p => {
+      const shareWithTaxAndTip = individualTotals[p] * multiplier;
+      return `
+        <div class="summary-row">
+          <span>${p}</span>
+          <strong>$${shareWithTaxAndTip.toFixed(2)}</strong>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Initial call
+  calculate();
+</script>
+</body>
+</html>
